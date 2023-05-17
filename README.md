@@ -3,8 +3,10 @@ An HTML scrubber that extracts the text content of the page and removes the HTML
 This scrubber is targeted at NLP usage by maintaining as much of the text formatting as possible.
 You can always use regex to remove everything bettwen the tag charaters `<>` or BeautifulSoup which does a good job but doesn't handle some things well, like table data.
 
+This scrubber uses the built-in HTMLParser class so no additional packages are required.
+
 Some paragraph parsers look for two consecutive newlines to determine paragraph boundaries.  The HTMLScrubber will ensure that text marked with paragraph tags `<p></p>` Have empty lines above and below.
-Table headings and data will also be laid out closer to what the browser would display.
+Table headings and data will also be laid out closer to what the browser would display instead of putting each column on a separate line.
 
 ## Usage
 There are two static convenience functions, one to read an input string and one to read from a file.
@@ -24,7 +26,9 @@ There are a few options available to control the output.
 
 `table_data_delimiter` specifies what string to insert between table heading or table data columns.  The default is a tab.
 
-`include_href` and `include_href_title` are used when an anchor (HTML link) is found.  Normally most HTML strippers would discard the link entirely (except for the display text).  If both are True (the default) an anchor like this:
+`include_href` and `include_href_title` are used when an anchor (HTML link) is found.  Normally most HTML strippers would discard the link entirely (except for the display text). 
+
+If both are True (the default) an anchor like this:
 
 `<a href="https://en.wikipedia.org/wiki/Category:Articles_with_Curlie_links" title="Category:Articles with Curlie links">Articles with Curlie links</a>`
 

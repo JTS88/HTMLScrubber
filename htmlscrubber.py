@@ -1,4 +1,5 @@
 import logging
+import re
 from html.parser import HTMLParser
 
 logger = logging.getLogger(__name__)
@@ -25,9 +26,21 @@ class HTMLScrubber(HTMLParser):
         # the accumulated text data from parsing the page
         self.accumulated_text = []
 
+        self.pre_nest = 0
+        self.code_nest = 0
+
+        # regex for the heading tags h1 - h6
+        self.heading_regex = re.compile('h[1-6]')
+
         self.in_script = False
         self.in_style = False
         self.table_row_first_column = False
+
+    def reset(self):
+        super().reset()
+        self.accumulated_text = []
+        self.pre_nest = 0
+        self.code_nest = 0
 
     def get_text(self, html_text: str) -> str:
         """
@@ -35,7 +48,6 @@ class HTMLScrubber(HTMLParser):
         :param html_text: The HTML string to parse
         :return: The extracted text
         """
-        self.accumulated_text = []
         self.reset()
         self.feed(html_text)
         self.close()
@@ -137,15 +149,19 @@ class HTMLScrubber(HTMLParser):
         elif tag == 'button':
             # buttons will have blank lines above and below
             self.accumulated_text.append('\n' * (1 if self.prev_newline() else 2))
+        elif tag == 'code':
+            self.code_nest += 1
         elif tag == 'ol' or tag == 'ul':
             # beginning of a list, start it on a new line
             if not self.prev_newline():
                 self.accumulated_text.append('\n')
-        elif tag == 'p':
-            # start of paragraph, make sure there are enough newlines
+        elif tag == 'p' or self.heading_regex.match(tag):
+            # start of paragraph or a heading, make sure there are enough newlines
             num_newlines = self.pp_newlines if not self.prev_newline() else self.pp_newlines - 1
             if num_newlines > 0:
                 self.accumulated_text.append('\n' * num_newlines)
+        elif tag == 'pre':
+            self.pre_nest += 1
         elif tag == 'script':
             self.in_script = True
         elif tag == 'style':
@@ -173,15 +189,22 @@ class HTMLScrubber(HTMLParser):
         :return: None
         """
         logger.debug('Encountered an end tag:', tag)
-        if tag == 'button':
+        if tag == 'br':
+            # this is a tag like <br />, just ignore it
+            pass
+        elif tag == 'button':
             # buttons will have blank lines above and below
             self.accumulated_text.append('\n\n')
+        elif tag == 'code':
+            self.code_nest -= 1
         elif tag == 'li':
             logger.info('End of list item')
             self.accumulated_text.append('\n')
-        elif tag == 'p':
-            # end of a paragraph, insert the specified number of newlines
+        elif tag == 'p' or self.heading_regex.match(tag):
+            # end of a paragraph or heading, insert the specified number of newlines
             self.accumulated_text.append('\n' * self.pp_newlines)
+        elif tag == 'pre':
+            self.pre_nest -= 1
         elif tag == 'script':
             self.in_script = False
         elif tag == 'style':
@@ -218,5 +241,9 @@ class HTMLScrubber(HTMLParser):
             else:
                 logger.info('Encountered some data:', data)
                 self.accumulated_text.append(data)
+
+                # if we are in a <pre> section, add a newline
+                if self.pre_nest > 0:
+                    self.accumulated_text.append('\n')
         else:
             logger.info('Skipping script or style data:', data)

@@ -1,7 +1,7 @@
 # HTMLScrubber
 An HTML scrubber that extracts the text content of the page and removes the HTML tags.
 This scrubber is targeted at NLP usage by maintaining as much of the text formatting as possible.
-You can always use regex to remove everything bettwen the tag charaters `<>` or BeautifulSoup which does a good job but doesn't handle some things well, like table data.
+You can always use regex to remove everything between the tag charaters `<>` or BeautifulSoup which does a good job but doesn't handle some things well, like table data.
 
 This scrubber uses the built-in HTMLParser class so no additional packages are required.
 
@@ -17,7 +17,7 @@ There are two static convenience functions, one to read an input string and one 
 
 If you plan to process a bunch of files, it's better to create an instance of the scrubber and call `get_text()` or `get_from_file()` instead.
 
-### Constuction
+### Construction
 There are a few options available to control the output.
 
 `HTMLScrubber(pp_newlines=2, table_data_delimiter='\t', include_href=False, include_href_title=False)`
